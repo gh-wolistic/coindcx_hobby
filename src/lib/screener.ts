@@ -62,6 +62,23 @@ export interface ScreenerResponse {
   fetchedAt: string;
 }
 
+export type ConfidenceLevel = 'HIGH' | 'MEDIUM' | 'LOW';
+
+export interface RecommendRow extends ScreenerRow {
+  convictionScore: number;
+  confidence: ConfidenceLevel;
+  minutesSinceSignal: number;
+  rrRatio: number;
+}
+
+export interface RecommendResponse {
+  top: RecommendRow | null;
+  runners: RecommendRow[];
+  scannedPairs: number;
+  hotCandidates: number;
+  fetchedAt: string;
+}
+
 export function normalizeExcludedPairs(entries: string[]): string[] {
   const unique = new Set<string>();
 
