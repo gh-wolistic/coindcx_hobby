@@ -31,7 +31,7 @@ const NO_CHASE_MAX_IMPULSE_PCT = 4.5;
 const NO_CHASE_MIN_RVOL = 1.2;
 const NO_CHASE_MAX_RVOL = 3.8;
 const NO_CHASE_MAX_RANGE_PCT = 6.5;
-const HOT_SIGNAL_WINDOW_MS = 15 * 60 * 1000;
+const HOT_SIGNAL_WINDOW_MS = 30 * 60 * 1000;
 
 
 interface BurstMetrics {

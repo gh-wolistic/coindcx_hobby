@@ -105,9 +105,11 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
   const [summary, setSummary] = useState<Omit<ScreenerResponse, 'rows'> | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [appliedExclusionSignature, setAppliedExclusionSignature] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('score');
+  const [sortKey, setSortKey] = useState<SortKey>('lastSignalTimestamp');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [noChaseMode, setNoChaseMode] = useState(true);
+  const [showExclusionList, setShowExclusionList] = useState(false);
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
@@ -151,6 +153,21 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
         fetchedAt: result.fetchedAt,
       });
       setAppliedExclusionSignature(excludedPairs.join('|'));
+
+      // Auto-add low-volume pairs to exclusion (once per day)
+      const lastAutoExcludeDate = window.localStorage.getItem('coindcx-last-auto-exclude');
+      const today = new Date().toISOString().split('T')[0];
+      if (lastAutoExcludeDate !== today && result.rows.length > 0) {
+        const lowVolPairs = result.rows
+          .filter((r) => r.volume24h < 500000)
+          .map((r) => r.pair)
+          .filter((p) => !excludedPairs.includes(p.toUpperCase()));
+        if (lowVolPairs.length > 0) {
+          const updated = [...new Set([...excludedPairs, ...lowVolPairs])].sort().join('\n');
+          setExclusionText(updated);
+          window.localStorage.setItem('coindcx-last-auto-exclude', today);
+        }
+      }
     } catch (fetchError) {
       console.error(fetchError);
       setError('Failed to load the screener.');
@@ -160,9 +177,44 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
     }
   };
 
+  // Set up hourly auto-refresh from 23:00 onwards
   useEffect(() => {
     if (!hydrated) return;
+
+    const setupAutoRefresh = () => {
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+
+      const scheduleNextRefresh = () => {
+        const now = new Date();
+        const nextRefreshTime = new Date();
+        nextRefreshTime.setHours(23, 0, 0, 0);
+
+        // If 23:00 has already passed today, schedule for tomorrow's 23:00
+        if (now > nextRefreshTime) {
+          nextRefreshTime.setDate(nextRefreshTime.getDate() + 1);
+        }
+
+        const msUntilNextRefresh = nextRefreshTime.getTime() - now.getTime();
+        const timeoutId = setTimeout(() => {
+          fetchScreener();
+          // After first refresh at 23:00, set up hourly interval
+          const intervalId = setInterval(fetchScreener, 60 * 60 * 1000);
+          setAutoRefreshInterval(intervalId);
+        }, msUntilNextRefresh);
+
+        return timeoutId;
+      };
+
+      const id = scheduleNextRefresh();
+      setAutoRefreshInterval(id as unknown as NodeJS.Timeout);
+    };
+
     fetchScreener();
+    setupAutoRefresh();
+
+    return () => {
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+    };
   }, [hydrated]);
 
   const currentExcludedPairs = parseExcludedPairsText(exclusionText);
@@ -181,7 +233,7 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
         if (!row.burstSignal) return false;
         if (!row.lastSignalTimestamp) return false;
         const signalTimestamp = row.lastSignalTimestamp > 1000000000000 ? row.lastSignalTimestamp : row.lastSignalTimestamp * 1000;
-        if (Date.now() - signalTimestamp > 15 * 60 * 1000) return false;
+        if (Date.now() - signalTimestamp > 30 * 60 * 1000) return false;
       }
       if (mode === 'burst' && statusFilter === 'burst' && !row.burstSignal) return false;
       if (mode === 'short' && !row.burstSignal) return false;
@@ -252,7 +304,7 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
                   : mode === 'short'
                     ? 'Find overbought unwind and profit-booking breakdowns using mirrored short burst logic with no-chase controls.'
                     : mode === 'hot'
-                      ? 'Shows both long and short burst setups where the latest signal happened in the last 15 minutes.'
+                      ? 'Shows both long and short burst setups where the latest signal happened in the last 30 minutes.'
                     : 'Find 1h expansion moves with supertrend + breakout + RVOL, then sort by the metric that matters to your current session.'}
               </p>
             </div>
@@ -343,7 +395,7 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
                 )}
                 {mode === 'hot' && (
                   <span className="rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 text-amber-100">
-                    HOT mode keeps only signals from last 15 minutes
+                    HOT mode keeps only signals from last 30 minutes
                   </span>
                 )}
                 {exclusionDirty && (
@@ -356,16 +408,23 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
               <div className="mb-3 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-semibold text-white">Exclusion List</p>
-                  <p className="text-xs text-zinc-400">One pair per line. Saved in browser local storage.</p>
+                  <p className="text-xs text-zinc-400">Auto-updated daily with low-volume pairs (&lt;500K).</p>
                 </div>
-                <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-300">{currentExcludedPairs.length} pairs</span>
+                <button
+                  onClick={() => setShowExclusionList((prev) => !prev)}
+                  className="rounded-full border border-white/20 px-3 py-1 text-xs font-medium text-zinc-300 hover:border-white/40 hover:text-white transition"
+                >
+                  {showExclusionList ? 'Hide' : 'View'} ({currentExcludedPairs.length})
+                </button>
               </div>
-              <textarea
-                value={exclusionText}
-                onChange={(event) => setExclusionText(event.target.value)}
-                spellCheck={false}
-                className="min-h-56 w-full rounded-2xl border border-white/10 bg-zinc-950/70 px-4 py-3 font-mono text-sm leading-6 text-zinc-200 outline-none transition focus:border-emerald-400/60"
-              />
+              {showExclusionList && (
+                <textarea
+                  value={exclusionText}
+                  onChange={(event) => setExclusionText(event.target.value)}
+                  spellCheck={false}
+                  className="min-h-56 w-full rounded-2xl border border-white/10 bg-zinc-950/70 px-4 py-3 font-mono text-sm leading-6 text-zinc-200 outline-none transition focus:border-emerald-400/60"
+                />
+              )}
             </div>
           </div>
         </section>
