@@ -297,6 +297,9 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
                 <Link href="/recommend" className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-zinc-300 hover:border-zinc-300">
                   🔥 Recommend
                 </Link>
+                <Link href="/hulk" className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-zinc-300 hover:border-zinc-300">
+                  HULK
+                </Link>
               </div>
               <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
                 {mode === 'fresh' ? 'Fresh Burst Screener' : mode === 'short' ? 'Short Breakdown Screener' : mode === 'hot' ? 'HOT Screener' : 'Burst Screener'}

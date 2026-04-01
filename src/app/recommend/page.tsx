@@ -63,7 +63,6 @@ function TradeCard({ row, rank }: { row: RecommendRow; rank: 'top' | number }) {
       {typeof rank === 'number' && (
         <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-400">Runner-up #{rank}</div>
       )}
-
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-3xl font-bold text-white">{row.symbol}</p>
@@ -198,6 +197,7 @@ export default function RecommendPage() {
         { href: '/fresh-burst', label: 'Fresh Burst' },
         { href: '/short', label: 'Short' },
         { href: '/hot', label: 'HOT' },
+        { href: '/hulk', label: 'HULK' },
         { href: '/recommend', label: '🔥 Recommend', active: true },
       ].map((link) => (
         <Link
