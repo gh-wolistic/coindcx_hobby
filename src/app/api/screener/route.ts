@@ -31,7 +31,7 @@ const NO_CHASE_MAX_IMPULSE_PCT = 4.5;
 const NO_CHASE_MIN_RVOL = 1.2;
 const NO_CHASE_MAX_RVOL = 3.8;
 const NO_CHASE_MAX_RANGE_PCT = 6.5;
-const HOT_SIGNAL_WINDOW_MS = 30 * 60 * 1000;
+const HOT_SIGNAL_WINDOW_MS = 90 * 60 * 1000;
 
 
 interface BurstMetrics {
@@ -43,6 +43,7 @@ interface BurstMetrics {
   burstSignal: boolean;
   freshBurstSignal: boolean;
   score: number;
+  signalTimestamp: number | null;
 }
 
 type BurstDirection = 'long' | 'short';
@@ -183,6 +184,7 @@ function getRecentBurstMetrics(
     burstSignal: false,
     freshBurstSignal: false,
     score: 0,
+    signalTimestamp: null,
   };
 
   for (let index = candidateStart; index < candles.length; index += 1) {
@@ -264,6 +266,7 @@ function getRecentBurstMetrics(
         burstSignal,
         freshBurstSignal,
         score,
+        signalTimestamp: candle.time || null,
       };
       continue;
     }
@@ -278,6 +281,7 @@ function getRecentBurstMetrics(
         burstSignal,
         freshBurstSignal,
         score,
+        signalTimestamp: candle.time || null,
       };
       continue;
     }
@@ -296,6 +300,7 @@ function getRecentBurstMetrics(
         burstSignal,
         freshBurstSignal,
         score,
+        signalTimestamp: candle.time || null,
       };
     }
   }
@@ -471,7 +476,7 @@ function buildRow(
     tp2Price: levels.tp2Price,
     tp3Price: levels.tp3Price,
     tradeSide: levels.tradeSide,
-    lastSignalTimestamp: supertrend.signals[0]?.timestamp || null,
+    lastSignalTimestamp: recentBurst.signalTimestamp,
   };
 }
 

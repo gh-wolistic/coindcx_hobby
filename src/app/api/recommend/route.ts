@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 const BREAKOUT_WINDOW = 20;
 const CONCURRENCY_LIMIT = 12;
 const HOURLY_LOOKBACK = 200;
-const HOT_WINDOW_MS = 30 * 60 * 1000;
+const HOT_WINDOW_MS = 90 * 60 * 1000;
 
 interface Candle {
   open: number;
@@ -120,6 +120,7 @@ function buildRowForSide(
   let bestRange = 0;
   let isBurst = false;
   let isFresh = false;
+  let bestSignalTimestamp: number | null = null;
 
   const candidateStart = Math.max(BREAKOUT_WINDOW, candles.length - 3);
   for (let i = candidateStart; i < candles.length; i++) {
@@ -172,6 +173,7 @@ function buildRowForSide(
       bestRange = range;
       isBurst = burst;
       isFresh = fresh;
+      bestSignalTimestamp = candle.time || null;
     }
   }
 
@@ -237,7 +239,7 @@ function buildRowForSide(
     tp2Price: tp2,
     tp3Price: tp3,
     tradeSide: side,
-    lastSignalTimestamp: supertrend.signals[0]?.timestamp || null,
+    lastSignalTimestamp: bestSignalTimestamp,
   };
 }
 
@@ -293,12 +295,12 @@ export async function POST(request: Request) {
       }
     });
 
-    // Filter: burstSignal + within HOT_WINDOW + noChaseEligible + RR >= 1.0
+    // Filter: burstSignal + within HOT_WINDOW; no-chase is now a score boost, not a hard gate.
     const hotRows = scannedRows
       .flat()
       .filter((row): row is ScreenerRow => Boolean(row))
       .filter((row) => {
-        if (!row.burstSignal || !row.noChaseEligible) return false;
+        if (!row.burstSignal) return false;
         if (!row.lastSignalTimestamp) return false;
         const tsMs = row.lastSignalTimestamp > 1e12 ? row.lastSignalTimestamp : row.lastSignalTimestamp * 1000;
         return Date.now() - tsMs <= HOT_WINDOW_MS;
@@ -310,7 +312,7 @@ export async function POST(request: Request) {
         const { convictionScore, confidence, minutesSinceSignal, rrRatio } = computeConviction(row);
         return { ...row, convictionScore, confidence, minutesSinceSignal, rrRatio };
       })
-      .filter((r) => r.rrRatio >= 1.0)
+      .filter((r) => r.rrRatio >= 0.85)
       .sort((a, b) => b.convictionScore - a.convictionScore);
 
     const response: RecommendResponse = {

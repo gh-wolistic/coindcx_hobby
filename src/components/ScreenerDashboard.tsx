@@ -100,14 +100,14 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<ScreenerFilter>('all');
-  const [minRvol, setMinRvol] = useState(mode === 'fresh' ? '1.1' : mode === 'short' ? '1.2' : mode === 'hot' ? '1.2' : '1.0');
+  const [minRvol, setMinRvol] = useState(mode === 'fresh' ? '1.1' : mode === 'short' ? '1.2' : mode === 'hot' ? '1.0' : '1.0');
   const [exclusionText, setExclusionText] = useState(DEFAULT_EXCLUDED_PAIRS.join('\n'));
   const [summary, setSummary] = useState<Omit<ScreenerResponse, 'rows'> | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [appliedExclusionSignature, setAppliedExclusionSignature] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('lastSignalTimestamp');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [noChaseMode, setNoChaseMode] = useState(true);
+  const [noChaseMode, setNoChaseMode] = useState(mode === 'hot' ? false : true);
   const [showExclusionList, setShowExclusionList] = useState(false);
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null);
   const [soundAlertsEnabled, setSoundAlertsEnabled] = useState(true);
