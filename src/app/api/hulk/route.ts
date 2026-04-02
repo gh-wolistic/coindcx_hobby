@@ -9,6 +9,7 @@ const HULL_LENGTH = 55;
 
 type HulkColor = 'green' | 'red';
 type HulkState = 'above' | 'below' | 'crossing';
+type PricePosition = 'above' | 'below';
 
 interface Candle {
   open: number;
@@ -24,6 +25,11 @@ interface HulkRow {
   symbol: string;
   color: HulkColor;
   state: HulkState;
+  price: number;
+  hullValue: number;
+  pricePosition: PricePosition;
+  priority: boolean;
+  priorityReason: string | null;
 }
 
 function parseNumber(value: unknown): number {
@@ -129,7 +135,17 @@ function hma(values: number[], length: number): (number | null)[] {
   return out;
 }
 
-function getHullStatus(candles: Candle[]): { color: HulkColor; state: HulkState } | null {
+function getHullStatus(
+  candles: Candle[]
+): {
+  color: HulkColor;
+  state: HulkState;
+  price: number;
+  hullValue: number;
+  pricePosition: PricePosition;
+  priority: boolean;
+  priorityReason: string | null;
+} | null {
   if (candles.length < HULL_LENGTH + 5) return null;
 
   const closes = candles.map((c) => c.close);
@@ -149,8 +165,28 @@ function getHullStatus(candles: Candle[]): { color: HulkColor; state: HulkState 
 
   const color: HulkColor = (mhullNow as number) > (shullNow as number) ? 'green' : 'red';
   const state: HulkState = crossing ? 'crossing' : (mhullNow as number) > (shullNow as number) ? 'above' : 'below';
+  const price = closes[closes.length - 1];
+  const hullValue = mhullNow as number;
+  const pricePosition: PricePosition = price >= hullValue ? 'above' : 'below';
 
-  return { color, state };
+  let priorityReason: string | null = null;
+  if (crossing) {
+    priorityReason = 'Hull crossing';
+  } else if (color === 'green' && pricePosition === 'below') {
+    priorityReason = 'Green hull, price below';
+  } else if (color === 'red' && pricePosition === 'above') {
+    priorityReason = 'Red hull, price above';
+  }
+
+  return {
+    color,
+    state,
+    price,
+    hullValue,
+    pricePosition,
+    priority: Boolean(priorityReason),
+    priorityReason,
+  };
 }
 
 export async function POST(request: Request) {
@@ -179,6 +215,11 @@ export async function POST(request: Request) {
             symbol: pairToSymbol(pair),
             color: status.color,
             state: status.state,
+            price: status.price,
+            hullValue: status.hullValue,
+            pricePosition: status.pricePosition,
+            priority: status.priority,
+            priorityReason: status.priorityReason,
           } as HulkRow;
         } catch {
           return null;

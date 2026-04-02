@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DEFAULT_EXCLUDED_PAIRS,
   parseExcludedPairsText,
@@ -110,6 +110,10 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
   const [noChaseMode, setNoChaseMode] = useState(true);
   const [showExclusionList, setShowExclusionList] = useState(false);
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [soundAlertsEnabled, setSoundAlertsEnabled] = useState(true);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const seenSignalKeysRef = useRef<Set<string>>(new Set());
+  const hasInitializedSignalsRef = useRef(false);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
@@ -118,6 +122,48 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
     }
     setHydrated(true);
   }, []);
+
+  const playNewEntryChime = () => {
+    if (!soundAlertsEnabled) return;
+
+    const AudioContextCtor = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextCtor) return;
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContextCtor();
+    }
+
+    const ctx = audioContextRef.current;
+    if (ctx.state === 'suspended') {
+      void ctx.resume();
+    }
+
+    const now = ctx.currentTime;
+
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(880, now);
+    gain1.gain.setValueAtTime(0.0001, now);
+    gain1.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+    gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.15);
+
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(1174, now + 0.08);
+    gain2.gain.setValueAtTime(0.0001, now + 0.08);
+    gain2.gain.exponentialRampToValueAtTime(0.08, now + 0.1);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.08);
+    osc2.stop(now + 0.24);
+  };
 
   useEffect(() => {
     if (!hydrated) return;
@@ -216,6 +262,37 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
       if (autoRefreshInterval) clearInterval(autoRefreshInterval);
     };
   }, [hydrated]);
+
+  useEffect(() => {
+    if (mode !== 'hot') return;
+
+    const currentSignalKeys = new Set(
+      rows
+        .filter((row) => row.burstSignal && Boolean(row.lastSignalTimestamp))
+        .map((row) => `${row.pair}:${row.tradeSide}:${row.lastSignalTimestamp || 0}`)
+    );
+
+    if (!hasInitializedSignalsRef.current) {
+      seenSignalKeysRef.current = currentSignalKeys;
+      hasInitializedSignalsRef.current = true;
+      return;
+    }
+
+    const hasNewSignal = Array.from(currentSignalKeys).some((key) => !seenSignalKeysRef.current.has(key));
+    if (hasNewSignal) {
+      playNewEntryChime();
+    }
+
+    seenSignalKeysRef.current = currentSignalKeys;
+  }, [rows, mode, soundAlertsEnabled]);
+
+  useEffect(() => {
+    return () => {
+      if (audioContextRef.current) {
+        void audioContextRef.current.close();
+      }
+    };
+  }, []);
 
   const currentExcludedPairs = parseExcludedPairsText(exclusionText);
   const minRvolValue = Number.parseFloat(minRvol) || 0;
@@ -403,6 +480,18 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
                   <span className="rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 text-amber-100">
                     HOT mode keeps only signals from last 30 minutes
                   </span>
+                )}
+                {mode === 'hot' && (
+                  <button
+                    onClick={() => setSoundAlertsEnabled((prev) => !prev)}
+                    className={`rounded-full border px-3 py-1 ${
+                      soundAlertsEnabled
+                        ? 'border-emerald-300/30 bg-emerald-300/15 text-emerald-100'
+                        : 'border-zinc-500/40 bg-zinc-500/10 text-zinc-300'
+                    }`}
+                  >
+                    New Entry Chime: {soundAlertsEnabled ? 'On' : 'Off'}
+                  </button>
                 )}
                 {exclusionDirty && (
                   <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-amber-200">exclusion list changed, apply to rescan</span>

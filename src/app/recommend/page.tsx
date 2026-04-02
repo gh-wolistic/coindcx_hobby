@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { parseExcludedPairsText, DEFAULT_EXCLUDED_PAIRS, type RecommendRow, type RecommendResponse } from '@/lib/screener';
 
 const STORAGE_KEY = 'coindcx-screener-excluded-pairs';
@@ -51,7 +51,7 @@ function TradeCard({ row, rank }: { row: RecommendRow; rank: 'top' | number }) {
 
   return (
     <div className={`rounded-3xl border p-6 ${isTop
-      ? 'border-amber-300/40 bg-gradient-to-br from-amber-300/10 via-black/30 to-black/40 shadow-lg shadow-amber-900/20'
+      ? 'border-amber-300/40 bg-linear-to-br from-amber-300/10 via-black/30 to-black/40 shadow-lg shadow-amber-900/20'
       : 'border-white/10 bg-black/25'
     }`}>
       {isTop && (
@@ -149,6 +149,52 @@ export default function RecommendPage() {
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL_MS / 1000);
   const [lastFetchedAt, setLastFetchedAt] = useState<Date | null>(null);
+  const [soundAlertsEnabled, setSoundAlertsEnabled] = useState(true);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const seenSignalKeysRef = useRef<Set<string>>(new Set());
+  const hasInitializedSignalsRef = useRef(false);
+
+  const playNewEntryChime = () => {
+    if (!soundAlertsEnabled) return;
+
+    const AudioContextCtor = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextCtor) return;
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContextCtor();
+    }
+
+    const ctx = audioContextRef.current;
+    if (ctx.state === 'suspended') {
+      void ctx.resume();
+    }
+
+    const now = ctx.currentTime;
+
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(880, now);
+    gain1.gain.setValueAtTime(0.0001, now);
+    gain1.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+    gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.15);
+
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(1174, now + 0.08);
+    gain2.gain.setValueAtTime(0.0001, now + 0.08);
+    gain2.gain.exponentialRampToValueAtTime(0.08, now + 0.1);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.08);
+    osc2.stop(now + 0.24);
+  };
 
   const fetchRecommend = useCallback(async (silent = false) => {
     const excluded = parseExcludedPairsText(
@@ -188,6 +234,34 @@ export default function RecommendPage() {
   useEffect(() => {
     const tick = setInterval(() => setCountdown((prev) => Math.max(0, prev - 1)), 1000);
     return () => clearInterval(tick);
+  }, []);
+
+  useEffect(() => {
+    if (!data) return;
+
+    const candidateRows = [data.top, ...data.runners].filter((row): row is RecommendRow => Boolean(row));
+    const currentSignalKeys = new Set(candidateRows.map((row) => `${row.pair}:${row.tradeSide}:${row.lastSignalTimestamp || 0}`));
+
+    if (!hasInitializedSignalsRef.current) {
+      seenSignalKeysRef.current = currentSignalKeys;
+      hasInitializedSignalsRef.current = true;
+      return;
+    }
+
+    const hasNewSignal = Array.from(currentSignalKeys).some((key) => !seenSignalKeysRef.current.has(key));
+    if (hasNewSignal) {
+      playNewEntryChime();
+    }
+
+    seenSignalKeysRef.current = currentSignalKeys;
+  }, [data, soundAlertsEnabled]);
+
+  useEffect(() => {
+    return () => {
+      if (audioContextRef.current) {
+        void audioContextRef.current.close();
+      }
+    };
   }, []);
 
   const navLinks = (
@@ -243,6 +317,16 @@ export default function RecommendPage() {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-xs text-zinc-500">Next refresh in {countdown}s</span>
+              <button
+                onClick={() => setSoundAlertsEnabled((prev) => !prev)}
+                className={`inline-flex h-9 items-center rounded-full border px-3 text-xs font-semibold transition ${
+                  soundAlertsEnabled
+                    ? 'border-emerald-300/30 bg-emerald-300/15 text-emerald-100 hover:bg-emerald-300/20'
+                    : 'border-zinc-500/40 bg-zinc-500/10 text-zinc-300 hover:bg-zinc-500/20'
+                }`}
+              >
+                New Entry Chime: {soundAlertsEnabled ? 'On' : 'Off'}
+              </button>
               <button
                 onClick={() => fetchRecommend(true)}
                 disabled={refreshing}
