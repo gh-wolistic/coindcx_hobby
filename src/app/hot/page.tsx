@@ -1,5 +1,5 @@
-import ScreenerDashboard from '@/components/ScreenerDashboard';
+import { redirect } from 'next/navigation';
 
 export default function HotPage() {
-  return <ScreenerDashboard mode="hot" />;
+  redirect('/recommend');
 }

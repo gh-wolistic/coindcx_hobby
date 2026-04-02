@@ -5,6 +5,7 @@ import {
   normalizeExcludedPairs,
   pairToSymbol,
   type ScreenerMode,
+  type SignalPreset,
   type SetupType,
   type ScreenerResponse,
   type ScreenerRow,
@@ -31,7 +32,11 @@ const NO_CHASE_MAX_IMPULSE_PCT = 4.5;
 const NO_CHASE_MIN_RVOL = 1.2;
 const NO_CHASE_MAX_RVOL = 3.8;
 const NO_CHASE_MAX_RANGE_PCT = 6.5;
-const HOT_SIGNAL_WINDOW_MS = 90 * 60 * 1000;
+function getHotSignalWindowMs(preset: SignalPreset): number {
+  if (preset === 'aggressive') return 120 * 60 * 1000;
+  if (preset === 'strict') return 45 * 60 * 1000;
+  return 90 * 60 * 1000;
+}
 
 
 interface BurstMetrics {
@@ -482,7 +487,7 @@ function buildRow(
 
 export async function POST(request: Request) {
   try {
-    let requestBody: { excludedPairs?: string[]; mode?: ScreenerMode } | null = null;
+    let requestBody: { excludedPairs?: string[]; mode?: ScreenerMode; preset?: SignalPreset } | null = null;
 
     try {
       requestBody = await request.json();
@@ -490,7 +495,9 @@ export async function POST(request: Request) {
       requestBody = null;
     }
 
-  const mode: ScreenerMode = requestBody?.mode || 'burst';
+    const mode: ScreenerMode = requestBody?.mode || 'burst';
+    const preset: SignalPreset = requestBody?.preset || 'balanced';
+    const hotSignalWindowMs = getHotSignalWindowMs(preset);
     const excludedPairs = normalizeExcludedPairs(requestBody?.excludedPairs || DEFAULT_EXCLUDED_PAIRS);
     const excludedSet = new Set(excludedPairs);
     const [allPairs, prices] = await Promise.all([fetchActivePairs(), fetchLivePrices()]);
@@ -531,7 +538,16 @@ export async function POST(request: Request) {
           return false;
         }
 
-        return Date.now() - signalTimeMs <= HOT_SIGNAL_WINDOW_MS;
+        const inWindow = Date.now() - signalTimeMs <= hotSignalWindowMs;
+        if (!inWindow) {
+          return false;
+        }
+
+        if (preset === 'strict') {
+          return row.freshBurstSignal;
+        }
+
+        return true;
       })
       .sort((a, b) => {
         if (mode === 'hot' && a.tradeSide !== b.tradeSide) {

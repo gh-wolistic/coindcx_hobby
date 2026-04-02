@@ -1,5 +1,5 @@
-import ScreenerDashboard from '@/components/ScreenerDashboard';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return <ScreenerDashboard mode="burst" />;
+  redirect('/recommend');
 }

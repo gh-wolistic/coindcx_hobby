@@ -14,6 +14,7 @@ export const DEFAULT_EXCLUDED_PAIRS = [
 export type SupertrendStatusType = 'above' | 'below' | 'crossed_above' | 'crossed_below';
 export type ScreenerFilter = 'all' | 'burst' | SupertrendStatusType;
 export type ScreenerMode = 'burst' | 'fresh' | 'short' | 'hot';
+export type SignalPreset = 'aggressive' | 'balanced' | 'strict';
 export type SetupType =
   | 'fresh_breakout'
   | 'fresh_breakdown'

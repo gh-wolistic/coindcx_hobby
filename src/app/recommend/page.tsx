@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { parseExcludedPairsText, DEFAULT_EXCLUDED_PAIRS, type RecommendRow, type RecommendResponse } from '@/lib/screener';
+import { parseExcludedPairsText, DEFAULT_EXCLUDED_PAIRS, type RecommendRow, type RecommendResponse, type SignalPreset } from '@/lib/screener';
 
 const STORAGE_KEY = 'coindcx-screener-excluded-pairs';
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
@@ -149,6 +149,7 @@ export default function RecommendPage() {
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL_MS / 1000);
   const [lastFetchedAt, setLastFetchedAt] = useState<Date | null>(null);
+  const [signalPreset, setSignalPreset] = useState<SignalPreset>('balanced');
   const [soundAlertsEnabled, setSoundAlertsEnabled] = useState(true);
   const audioContextRef = useRef<AudioContext | null>(null);
   const seenSignalKeysRef = useRef<Set<string>>(new Set());
@@ -176,24 +177,26 @@ export default function RecommendPage() {
     osc1.type = 'sine';
     osc1.frequency.setValueAtTime(880, now);
     gain1.gain.setValueAtTime(0.0001, now);
-    gain1.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
-    gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+    gain1.gain.exponentialRampToValueAtTime(0.2, now + 0.03);
+    gain1.gain.exponentialRampToValueAtTime(0.06, now + 0.2);
+    gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
     osc1.connect(gain1);
     gain1.connect(ctx.destination);
     osc1.start(now);
-    osc1.stop(now + 0.15);
+    osc1.stop(now + 0.44);
 
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = 'triangle';
-    osc2.frequency.setValueAtTime(1174, now + 0.08);
-    gain2.gain.setValueAtTime(0.0001, now + 0.08);
-    gain2.gain.exponentialRampToValueAtTime(0.08, now + 0.1);
-    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+    osc2.frequency.setValueAtTime(1174, now + 0.12);
+    gain2.gain.setValueAtTime(0.0001, now + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.14, now + 0.16);
+    gain2.gain.exponentialRampToValueAtTime(0.05, now + 0.3);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
     osc2.connect(gain2);
     gain2.connect(ctx.destination);
-    osc2.start(now + 0.08);
-    osc2.stop(now + 0.24);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 0.6);
   };
 
   const fetchRecommend = useCallback(async (silent = false) => {
@@ -208,7 +211,7 @@ export default function RecommendPage() {
       const res = await fetch('/api/recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ excludedPairs: excluded }),
+        body: JSON.stringify({ excludedPairs: excluded, preset: signalPreset }),
       });
       if (!res.ok) throw new Error('Failed');
       const result: RecommendResponse = await res.json();
@@ -221,7 +224,7 @@ export default function RecommendPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [signalPreset]);
 
   // Initial fetch + auto-refresh every 5 minutes
   useEffect(() => {
@@ -317,6 +320,15 @@ export default function RecommendPage() {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-xs text-zinc-500">Next refresh in {countdown}s</span>
+              <select
+                value={signalPreset}
+                onChange={(event) => setSignalPreset(event.target.value as SignalPreset)}
+                className="h-9 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 text-xs font-semibold text-cyan-100 outline-none"
+              >
+                <option value="aggressive">Preset: Aggressive</option>
+                <option value="balanced">Preset: Balanced</option>
+                <option value="strict">Preset: Strict</option>
+              </select>
               <button
                 onClick={() => setSoundAlertsEnabled((prev) => !prev)}
                 className={`inline-flex h-9 items-center rounded-full border px-3 text-xs font-semibold transition ${
@@ -355,7 +367,7 @@ export default function RecommendPage() {
           <div className="rounded-3xl border border-white/10 bg-black/25 px-6 py-16 text-center">
             <p className="text-4xl">😴</p>
             <p className="mt-4 text-lg font-semibold text-zinc-200">No hottest trade found right now</p>
-            <p className="mt-2 text-sm text-zinc-400">No eligible burst signals with strong conviction in the last 30 minutes. Check back soon.</p>
+            <p className="mt-2 text-sm text-zinc-400">No eligible burst signals with strong conviction in the current preset window. Check back soon.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">

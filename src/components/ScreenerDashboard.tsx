@@ -9,6 +9,7 @@ import {
   type ScreenerMode,
   type ScreenerResponse,
   type ScreenerRow,
+  type SignalPreset,
   type SetupType,
 } from '@/lib/screener';
 
@@ -110,6 +111,7 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
   const [noChaseMode, setNoChaseMode] = useState(mode === 'hot' ? false : true);
   const [showExclusionList, setShowExclusionList] = useState(false);
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [signalPreset, setSignalPreset] = useState<SignalPreset>('balanced');
   const [soundAlertsEnabled, setSoundAlertsEnabled] = useState(true);
   const audioContextRef = useRef<AudioContext | null>(null);
   const seenSignalKeysRef = useRef<Set<string>>(new Set());
@@ -180,7 +182,7 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
       const response = await fetch('/api/screener', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ excludedPairs, mode }),
+        body: JSON.stringify({ excludedPairs, mode, preset: signalPreset }),
       });
 
       if (!response.ok) throw new Error('Failed to fetch screener');
@@ -261,7 +263,7 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
     return () => {
       if (autoRefreshInterval) clearInterval(autoRefreshInterval);
     };
-  }, [hydrated]);
+  }, [hydrated, signalPreset]);
 
   useEffect(() => {
     if (mode !== 'hot') return;
@@ -478,8 +480,19 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
                 )}
                 {mode === 'hot' && (
                   <span className="rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 text-amber-100">
-                    HOT mode keeps only signals from last 30 minutes
+                    HOT mode freshness window is preset-driven
                   </span>
+                )}
+                {mode === 'hot' && (
+                  <select
+                    value={signalPreset}
+                    onChange={(event) => setSignalPreset(event.target.value as SignalPreset)}
+                    className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs text-cyan-100 outline-none"
+                  >
+                    <option value="aggressive">Preset: Aggressive</option>
+                    <option value="balanced">Preset: Balanced</option>
+                    <option value="strict">Preset: Strict</option>
+                  </select>
                 )}
                 {mode === 'hot' && (
                   <button

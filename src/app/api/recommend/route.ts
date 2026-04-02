@@ -8,6 +8,7 @@ import {
   type RecommendRow,
   type RecommendResponse,
   type ScreenerRow,
+  type SignalPreset,
 } from '@/lib/screener';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,17 @@ export const dynamic = 'force-dynamic';
 const BREAKOUT_WINDOW = 20;
 const CONCURRENCY_LIMIT = 12;
 const HOURLY_LOOKBACK = 200;
-const HOT_WINDOW_MS = 90 * 60 * 1000;
+function getRecommendPresetConfig(preset: SignalPreset): { windowMs: number; minRr: number; requireNoChase: boolean; requireFresh: boolean } {
+  if (preset === 'aggressive') {
+    return { windowMs: 120 * 60 * 1000, minRr: 0.75, requireNoChase: false, requireFresh: false };
+  }
+
+  if (preset === 'strict') {
+    return { windowMs: 45 * 60 * 1000, minRr: 1.0, requireNoChase: true, requireFresh: true };
+  }
+
+  return { windowMs: 90 * 60 * 1000, minRr: 0.85, requireNoChase: false, requireFresh: false };
+}
 
 interface Candle {
   open: number;
@@ -276,9 +287,11 @@ function computeConviction(row: ScreenerRow): { convictionScore: number; confide
 
 export async function POST(request: Request) {
   try {
-    let body: { excludedPairs?: string[] } | null = null;
+    let body: { excludedPairs?: string[]; preset?: SignalPreset } | null = null;
     try { body = await request.json(); } catch { body = null; }
 
+    const preset: SignalPreset = body?.preset || 'balanced';
+    const presetConfig = getRecommendPresetConfig(preset);
     const excludedPairs = normalizeExcludedPairs(body?.excludedPairs || DEFAULT_EXCLUDED_PAIRS);
     const excludedSet = new Set(excludedPairs);
     const [allPairs, prices] = await Promise.all([fetchActivePairs(), fetchLivePrices()]);
@@ -295,15 +308,17 @@ export async function POST(request: Request) {
       }
     });
 
-    // Filter: burstSignal + within HOT_WINDOW; no-chase is now a score boost, not a hard gate.
+    // Filter by burst + recency, with optional strict-mode constraints.
     const hotRows = scannedRows
       .flat()
       .filter((row): row is ScreenerRow => Boolean(row))
       .filter((row) => {
         if (!row.burstSignal) return false;
+        if (presetConfig.requireNoChase && !row.noChaseEligible) return false;
+        if (presetConfig.requireFresh && !row.freshBurstSignal) return false;
         if (!row.lastSignalTimestamp) return false;
         const tsMs = row.lastSignalTimestamp > 1e12 ? row.lastSignalTimestamp : row.lastSignalTimestamp * 1000;
-        return Date.now() - tsMs <= HOT_WINDOW_MS;
+        return Date.now() - tsMs <= presetConfig.windowMs;
       });
 
     // Score and sort
@@ -312,7 +327,7 @@ export async function POST(request: Request) {
         const { convictionScore, confidence, minutesSinceSignal, rrRatio } = computeConviction(row);
         return { ...row, convictionScore, confidence, minutesSinceSignal, rrRatio };
       })
-      .filter((r) => r.rrRatio >= 0.85)
+      .filter((r) => r.rrRatio >= presetConfig.minRr)
       .sort((a, b) => b.convictionScore - a.convictionScore);
 
     const response: RecommendResponse = {
