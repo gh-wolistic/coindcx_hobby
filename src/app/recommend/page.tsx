@@ -318,12 +318,12 @@ export default function RecommendPage() {
                 </>
               )}
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-zinc-500">Next refresh in {countdown}s</span>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+              <span className="text-xs text-zinc-500 sm:text-right">Next refresh in {countdown}s</span>
               <select
                 value={signalPreset}
                 onChange={(event) => setSignalPreset(event.target.value as SignalPreset)}
-                className="h-9 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 text-xs font-semibold text-cyan-100 outline-none"
+                className="h-9 w-full rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 text-xs font-semibold text-cyan-100 outline-none sm:w-auto"
               >
                 <option value="aggressive">Preset: Aggressive</option>
                 <option value="balanced">Preset: Balanced</option>
@@ -331,7 +331,7 @@ export default function RecommendPage() {
               </select>
               <button
                 onClick={() => setSoundAlertsEnabled((prev) => !prev)}
-                className={`inline-flex h-9 items-center rounded-full border px-3 text-xs font-semibold transition ${
+                className={`inline-flex h-9 w-full items-center justify-center rounded-full border px-3 text-xs font-semibold transition sm:w-auto ${
                   soundAlertsEnabled
                     ? 'border-emerald-300/30 bg-emerald-300/15 text-emerald-100 hover:bg-emerald-300/20'
                     : 'border-zinc-500/40 bg-zinc-500/10 text-zinc-300 hover:bg-zinc-500/20'
@@ -342,7 +342,7 @@ export default function RecommendPage() {
               <button
                 onClick={() => fetchRecommend(true)}
                 disabled={refreshing}
-                className="inline-flex h-9 items-center gap-2 rounded-full bg-amber-400 px-4 text-xs font-semibold text-zinc-950 transition hover:bg-amber-300 disabled:opacity-60"
+                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full bg-amber-400 px-4 text-xs font-semibold text-zinc-950 transition hover:bg-amber-300 disabled:opacity-60 sm:w-auto"
               >
                 {refreshing ? 'Scanning...' : 'Refresh Now'}
               </button>
