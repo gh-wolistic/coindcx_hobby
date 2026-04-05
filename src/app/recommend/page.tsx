@@ -270,10 +270,9 @@ export default function RecommendPage() {
   const navLinks = (
     <div className="flex flex-wrap gap-2">
       {[
-        { href: '/', label: 'Burst' },
+        { href: '/burst', label: 'Burst' },
         { href: '/fresh-burst', label: 'Fresh Burst' },
         { href: '/short', label: 'Short' },
-        { href: '/hot', label: 'HOT' },
         { href: '/hulk', label: 'HULK' },
         { href: '/recommend', label: '🔥 Recommend', active: true },
       ].map((link) => (
@@ -313,7 +312,7 @@ export default function RecommendPage() {
               {data && (
                 <>
                   <span>Scanned <strong className="text-white">{data.scannedPairs}</strong> pairs</span>
-                  <span>HOT candidates <strong className="text-amber-300">{data.hotCandidates}</strong></span>
+                  <span>Candidates <strong className="text-amber-300">{data.hotCandidates}</strong></span>
                   <span>Last updated <strong className="text-white">{lastFetchedAt?.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) ?? '-'}</strong></span>
                 </>
               )}

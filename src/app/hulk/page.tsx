@@ -76,7 +76,7 @@ export default function HulkPage() {
         <section className="overflow-hidden rounded-[28px] border border-white/10 bg-white/5 shadow-2xl shadow-emerald-950/20 backdrop-blur">
           <div className="border-b border-white/10 px-5 py-6 lg:px-8">
             <div className="mb-3 flex flex-wrap gap-2">
-              <Link href="/" className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-zinc-300 hover:border-zinc-300">
+              <Link href="/burst" className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-zinc-300 hover:border-zinc-300">
                 Burst
               </Link>
               <Link href="/fresh-burst" className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-zinc-300 hover:border-zinc-300">
@@ -84,9 +84,6 @@ export default function HulkPage() {
               </Link>
               <Link href="/short" className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-zinc-300 hover:border-zinc-300">
                 Short
-              </Link>
-              <Link href="/hot" className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-zinc-300 hover:border-zinc-300">
-                HOT
               </Link>
               <Link href="/recommend" className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-zinc-300 hover:border-zinc-300">
                 Recommend

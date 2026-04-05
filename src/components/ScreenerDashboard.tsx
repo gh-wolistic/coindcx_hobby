@@ -361,7 +361,7 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
           <div className="flex flex-col gap-6 border-b border-white/10 px-5 py-6 lg:flex-row lg:items-start lg:justify-between lg:px-8">
             <div className="max-w-3xl">
               <div className="mb-3 flex flex-wrap gap-2">
-                <Link href="/" className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] ${mode === 'burst' ? 'border-emerald-300/40 bg-emerald-300/20 text-emerald-100' : 'border-white/20 text-zinc-300 hover:border-zinc-300'}`}>
+                <Link href="/burst" className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] ${mode === 'burst' ? 'border-emerald-300/40 bg-emerald-300/20 text-emerald-100' : 'border-white/20 text-zinc-300 hover:border-zinc-300'}`}>
                   Burst
                 </Link>
                 <Link href="/fresh-burst" className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] ${mode === 'fresh' ? 'border-cyan-300/45 bg-cyan-300/20 text-cyan-100' : 'border-white/20 text-zinc-300 hover:border-zinc-300'}`}>
@@ -369,9 +369,6 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
                 </Link>
                 <Link href="/short" className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] ${mode === 'short' ? 'border-rose-300/45 bg-rose-300/20 text-rose-100' : 'border-white/20 text-zinc-300 hover:border-zinc-300'}`}>
                   Short
-                </Link>
-                <Link href="/hot" className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] ${mode === 'hot' ? 'border-amber-300/45 bg-amber-300/20 text-amber-100' : 'border-white/20 text-zinc-300 hover:border-zinc-300'}`}>
-                  HOT
                 </Link>
                 <Link href="/recommend" className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-zinc-300 hover:border-zinc-300">
                   🔥 Recommend
