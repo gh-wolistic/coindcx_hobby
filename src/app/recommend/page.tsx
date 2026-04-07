@@ -155,7 +155,7 @@ export default function RecommendPage() {
   const seenSignalKeysRef = useRef<Set<string>>(new Set());
   const hasInitializedSignalsRef = useRef(false);
 
-  const playNewEntryChime = () => {
+  const playChime = (level: 'HIGH' | 'MEDIUM' | 'LOW') => {
     if (!soundAlertsEnabled) return;
 
     const AudioContextCtor = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -172,31 +172,79 @@ export default function RecommendPage() {
 
     const now = ctx.currentTime;
 
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(880, now);
-    gain1.gain.setValueAtTime(0.0001, now);
-    gain1.gain.exponentialRampToValueAtTime(0.2, now + 0.03);
-    gain1.gain.exponentialRampToValueAtTime(0.06, now + 0.2);
-    gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.start(now);
-    osc1.stop(now + 0.44);
+    if (level === 'HIGH') {
+      // Three ascending notes — loud and urgent
+      const freqs = [880, 1047, 1568];
+      const delays = [0, 0.18, 0.36];
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + delays[idx]);
+        gain.gain.setValueAtTime(0.0001, now + delays[idx]);
+        gain.gain.exponentialRampToValueAtTime(0.32, now + delays[idx] + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.1, now + delays[idx] + 0.18);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + delays[idx] + 0.38);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + delays[idx]);
+        osc.stop(now + delays[idx] + 0.4);
+      });
+    } else if (level === 'MEDIUM') {
+      // Brighter two-tone chime — noticeably different from LOW
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(1047, now);
+      gain1.gain.setValueAtTime(0.0001, now);
+      gain1.gain.exponentialRampToValueAtTime(0.26, now + 0.025);
+      gain1.gain.exponentialRampToValueAtTime(0.08, now + 0.22);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.44);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.46);
 
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.type = 'triangle';
-    osc2.frequency.setValueAtTime(1174, now + 0.12);
-    gain2.gain.setValueAtTime(0.0001, now + 0.12);
-    gain2.gain.exponentialRampToValueAtTime(0.14, now + 0.16);
-    gain2.gain.exponentialRampToValueAtTime(0.05, now + 0.3);
-    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.start(now + 0.12);
-    osc2.stop(now + 0.6);
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1397, now + 0.14);
+      gain2.gain.setValueAtTime(0.0001, now + 0.14);
+      gain2.gain.exponentialRampToValueAtTime(0.19, now + 0.17);
+      gain2.gain.exponentialRampToValueAtTime(0.06, now + 0.32);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.14);
+      osc2.stop(now + 0.6);
+    } else {
+      // LOW — original soft chime
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(880, now);
+      gain1.gain.setValueAtTime(0.0001, now);
+      gain1.gain.exponentialRampToValueAtTime(0.2, now + 0.03);
+      gain1.gain.exponentialRampToValueAtTime(0.06, now + 0.2);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.44);
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(1174, now + 0.12);
+      gain2.gain.setValueAtTime(0.0001, now + 0.12);
+      gain2.gain.exponentialRampToValueAtTime(0.14, now + 0.16);
+      gain2.gain.exponentialRampToValueAtTime(0.05, now + 0.3);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.12);
+      osc2.stop(now + 0.6);
+    }
   };
 
   const fetchRecommend = useCallback(async (silent = false) => {
@@ -251,9 +299,17 @@ export default function RecommendPage() {
       return;
     }
 
-    const hasNewSignal = Array.from(currentSignalKeys).some((key) => !seenSignalKeysRef.current.has(key));
-    if (hasNewSignal) {
-      playNewEntryChime();
+    const newRows = candidateRows.filter((row) => {
+      const key = `${row.pair}:${row.tradeSide}:${row.lastSignalTimestamp || 0}`;
+      return !seenSignalKeysRef.current.has(key);
+    });
+    if (newRows.length > 0) {
+      const topLevel = newRows.some((r) => r.confidence === 'HIGH')
+        ? 'HIGH'
+        : newRows.some((r) => r.confidence === 'MEDIUM')
+          ? 'MEDIUM'
+          : 'LOW';
+      playChime(topLevel);
     }
 
     seenSignalKeysRef.current = currentSignalKeys;
@@ -273,7 +329,6 @@ export default function RecommendPage() {
         { href: '/burst', label: 'Burst' },
         { href: '/fresh-burst', label: 'Fresh Burst' },
         { href: '/short', label: 'Short' },
-        { href: '/hulk', label: 'HULK' },
         { href: '/recommend', label: '🔥 Recommend', active: true },
       ].map((link) => (
         <Link
