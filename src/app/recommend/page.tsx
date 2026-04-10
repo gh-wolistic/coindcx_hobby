@@ -329,6 +329,7 @@ export default function RecommendPage() {
         { href: '/burst', label: 'Burst' },
         { href: '/fresh-burst', label: 'Fresh Burst' },
         { href: '/short', label: 'Short' },
+        { href: '/wild', label: 'Wild' },
         { href: '/recommend', label: '🔥 Recommend', active: true },
       ].map((link) => (
         <Link

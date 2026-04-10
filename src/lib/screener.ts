@@ -80,6 +80,29 @@ export interface RecommendResponse {
   fetchedAt: string;
 }
 
+export interface WildRow {
+  pair: string;
+  symbol: string;
+  ltp: number;
+  tradeSide: 'long' | 'short';
+  bodyMultiple: number;
+  currentBodyPct: number;
+  previousBodyPct: number;
+  currentVolume: number;
+  previousVolume: number;
+  volumeRatio: number;
+  supertrendValue: number;
+  supertrendDistancePct: number;
+  signalTimestamp: number;
+}
+
+export interface WildResponse {
+  rows: WildRow[];
+  scannedPairs: number;
+  matchedPairs: number;
+  fetchedAt: string;
+}
+
 export function normalizeExcludedPairs(entries: string[]): string[] {
   const unique = new Set<string>();
 
