@@ -127,8 +127,19 @@ function buildWildRow(
   if (!(current.volume > previous.volume)) return null;
 
   const supertrend = calculateSupertrend(candles, 10, 3);
+  const prevStValue = supertrend.history[i - 1]?.value ?? 0;
   const stAtSignalCandle = supertrend.history[i]?.value ?? 0;
-  if (!(current.close > 0) || !(stAtSignalCandle > 0)) return null;
+  if (!(current.close > 0) || !(stAtSignalCandle > 0) || !(prevStValue > 0)) return null;
+
+  const wasBelow = previous.close < prevStValue;
+  const isNowAbove = current.close > stAtSignalCandle;
+  const wasAbove = previous.close > prevStValue;
+  const isNowBelow = current.close < stAtSignalCandle;
+  const supertrendCross = wasBelow && isNowAbove
+    ? 'crossed_above'
+    : wasAbove && isNowBelow
+      ? 'crossed_below'
+      : null;
 
   const supertrendDistancePct = (Math.abs(current.close - stAtSignalCandle) / current.close) * 100;
   if (supertrendDistancePct > supertrendNearThresholdPct) return null;
@@ -141,6 +152,7 @@ function buildWildRow(
     symbol: pairToSymbol(pair),
     ltp,
     tradeSide: current.close >= current.open ? 'long' : 'short',
+    supertrendCross,
     bodyMultiple: previousBody > 0 ? currentBody / previousBody : 0,
     currentBodyPct: current.open > 0 ? (currentBody / current.open) * 100 : 0,
     previousBodyPct: previous.open > 0 ? (previousBody / previous.open) * 100 : 0,

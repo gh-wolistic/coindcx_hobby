@@ -10,7 +10,7 @@ import {
 } from '@/lib/screener';
 
 const STORAGE_KEY = 'coindcx-screener-excluded-pairs';
-const REFRESH_INTERVAL_MS = 60 * 1000;
+const DEFAULT_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
 const DEFAULT_NEAR_THRESHOLD_PCT = 1.0;
 
 function formatPrice(value: number): string {
@@ -54,6 +54,17 @@ function WildCard({ row }: { row: WildRow }) {
           <span className="rounded-full border border-amber-300/45 bg-amber-300/15 px-3 py-1 text-xs font-bold uppercase tracking-widest text-amber-200">
             Wild
           </span>
+          {row.supertrendCross && (
+            <span
+              className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-widest ${
+                row.supertrendCross === 'crossed_above'
+                  ? 'border-cyan-300/45 bg-cyan-300/15 text-cyan-100'
+                  : 'border-fuchsia-300/45 bg-fuchsia-300/15 text-fuchsia-100'
+              }`}
+            >
+              {row.supertrendCross === 'crossed_above' ? 'ST Cross Up' : 'ST Cross Down'}
+            </span>
+          )}
         </div>
       </div>
 
@@ -99,7 +110,8 @@ export default function WildPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState(REFRESH_INTERVAL_MS / 1000);
+  const [refreshIntervalMs, setRefreshIntervalMs] = useState(DEFAULT_REFRESH_INTERVAL_MS);
+  const [countdown, setCountdown] = useState(DEFAULT_REFRESH_INTERVAL_MS / 1000);
   const [nearThresholdPct, setNearThresholdPct] = useState(DEFAULT_NEAR_THRESHOLD_PCT);
   const [soundAlertsEnabled, setSoundAlertsEnabled] = useState(true);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -162,25 +174,29 @@ export default function WildPage() {
       if (!res.ok) throw new Error('Failed');
       const result: WildResponse = await res.json();
       setData(result);
-      setCountdown(REFRESH_INTERVAL_MS / 1000);
+      setCountdown(Math.floor(refreshIntervalMs / 1000));
     } catch {
       setError('Failed to load wild signals. Check your connection.');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [nearThresholdPct]);
+  }, [nearThresholdPct, refreshIntervalMs]);
 
   useEffect(() => {
     fetchWild();
-    const interval = setInterval(() => fetchWild(true), REFRESH_INTERVAL_MS);
+    const interval = setInterval(() => fetchWild(true), refreshIntervalMs);
     return () => clearInterval(interval);
-  }, [fetchWild]);
+  }, [fetchWild, refreshIntervalMs]);
 
   useEffect(() => {
     const tick = setInterval(() => setCountdown((prev) => Math.max(0, prev - 1)), 1000);
     return () => clearInterval(tick);
   }, []);
+
+  useEffect(() => {
+    setCountdown(Math.floor(refreshIntervalMs / 1000));
+  }, [refreshIntervalMs]);
 
   useEffect(() => {
     hasInitializedSignalsRef.current = false;
@@ -278,6 +294,16 @@ export default function WildPage() {
                 <option value={0.5}>ST Near: 0.5%</option>
                 <option value={1}>ST Near: 1.0%</option>
                 <option value={1.5}>ST Near: 1.5%</option>
+              </select>
+              <select
+                value={refreshIntervalMs}
+                onChange={(event) => setRefreshIntervalMs(parseInt(event.target.value, 10))}
+                className="h-9 rounded-full border border-amber-300/30 bg-amber-300/10 px-3 text-xs font-semibold text-amber-100 outline-none"
+              >
+                <option value={1 * 60 * 1000}>Check: 1 min</option>
+                <option value={5 * 60 * 1000}>Check: 5 min</option>
+                <option value={15 * 60 * 1000}>Check: 15 min</option>
+                <option value={60 * 60 * 1000}>Check: 60 min</option>
               </select>
               <button
                 onClick={() => setSoundAlertsEnabled((prev) => !prev)}

@@ -85,6 +85,7 @@ export interface WildRow {
   symbol: string;
   ltp: number;
   tradeSide: 'long' | 'short';
+  supertrendCross: 'crossed_above' | 'crossed_below' | null;
   bodyMultiple: number;
   currentBodyPct: number;
   previousBodyPct: number;
