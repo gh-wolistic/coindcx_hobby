@@ -86,6 +86,11 @@ export interface WildRow {
   ltp: number;
   tradeSide: 'long' | 'short';
   supertrendCross: 'crossed_above' | 'crossed_below' | null;
+  entryPrice: number;
+  stopLossPrice: number;
+  tp1Price: number;
+  tp2Price: number;
+  tp3Price: number;
   bodyMultiple: number;
   currentBodyPct: number;
   previousBodyPct: number;

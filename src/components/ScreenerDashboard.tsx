@@ -379,12 +379,12 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-300 sm:text-base">
                 {mode === 'fresh'
-                  ? 'First breakout candle detection with adjusted RVOL and supertrend alignment. This page focuses only on newly triggered burst setups.'
+                  ? 'Fresh breakout scanner. Detailed logic is in docs.'
                   : mode === 'short'
-                    ? 'Find overbought unwind and profit-booking breakdowns using mirrored short burst logic with no-chase controls.'
+                    ? 'Short-side scanner for breakdown candidates. Detailed logic is in docs.'
                     : mode === 'hot'
-                      ? 'Shows both long and short burst setups where the latest signal happened in the last 30 minutes.'
-                    : 'Find 1h expansion moves with supertrend + breakout + RVOL, then sort by the metric that matters to your current session.'}
+                      ? 'Recent high-priority scanner. Detailed logic is in docs.'
+                    : 'Burst scanner for expansion candidates. Detailed logic is in docs.'}
               </p>
             </div>
 
@@ -392,22 +392,22 @@ export default function ScreenerDashboard({ mode }: ScreenerDashboardProps) {
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                 <p className="text-xs uppercase tracking-[0.22em] text-zinc-400">Scanned</p>
                 <p className="mt-2 text-2xl font-semibold text-white">{summary?.scannedPairs ?? '-'}</p>
-                <p className="mt-1 text-xs text-zinc-400">from {summary?.totalPairs ?? '-'} active futures</p>
+                <p className="mt-1 text-xs text-zinc-400">of {summary?.totalPairs ?? '-'} active futures</p>
               </div>
               <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4">
                 <p className="text-xs uppercase tracking-[0.22em] text-cyan-100/80">{mode === 'fresh' ? 'Fresh Bursts' : mode === 'short' ? 'Short Candidates' : mode === 'hot' ? 'HOT Signals' : 'Burst Candidates'}</p>
                 <p className="mt-2 text-2xl font-semibold text-cyan-100">{displayedCandidateCount}</p>
-                <p className="mt-1 text-xs text-cyan-100/70">sorted table below is fully interactive</p>
+                <p className="mt-1 text-xs text-cyan-100/70">live matches</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                 <p className="text-xs uppercase tracking-[0.22em] text-zinc-400">Excluded</p>
                 <p className="mt-2 text-2xl font-semibold text-white">{summary?.excludedPairs.length ?? currentExcludedPairs.length}</p>
-                <p className="mt-1 text-xs text-zinc-400">applied before candle scans</p>
+                <p className="mt-1 text-xs text-zinc-400">global exclusions</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                 <p className="text-xs uppercase tracking-[0.22em] text-zinc-400">Last Refresh</p>
                 <p className="mt-2 text-lg font-semibold text-white">{summary ? formatTimestamp(Date.parse(summary.fetchedAt)) : '-'}</p>
-                <p className="mt-1 text-xs text-zinc-400">use refresh to apply exclusion edits</p>
+                <p className="mt-1 text-xs text-zinc-400">updates on refresh</p>
               </div>
             </div>
           </div>

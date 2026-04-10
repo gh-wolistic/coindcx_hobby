@@ -42,6 +42,9 @@ function SideBadge({ side }: { side: 'long' | 'short' }) {
 }
 
 function WildCard({ row }: { row: WildRow }) {
+  const riskAmt = Math.abs(row.entryPrice - row.stopLossPrice);
+  const rewardAmt = Math.abs(row.tp1Price - row.entryPrice);
+
   return (
     <article className="rounded-3xl border border-white/10 bg-black/25 p-5">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
@@ -100,6 +103,31 @@ function WildCard({ row }: { row: WildRow }) {
         <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-zinc-300">
           Vol {row.currentVolume.toFixed(0)} vs {row.previousVolume.toFixed(0)}
         </span>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <div className="rounded-2xl border border-white/15 bg-white/5 p-3">
+          <p className="text-xs uppercase tracking-wider text-zinc-400">Entry</p>
+          <p className="mt-1 font-semibold text-white">₹{formatPrice(row.entryPrice)}</p>
+        </div>
+        <div className="rounded-2xl border border-rose-400/30 bg-rose-400/10 p-3">
+          <p className="text-xs uppercase tracking-wider text-rose-300">Stop Loss</p>
+          <p className="mt-1 font-semibold text-rose-200">₹{formatPrice(row.stopLossPrice)}</p>
+          <p className="text-xs text-rose-300/70">risk ₹{formatPrice(riskAmt)}</p>
+        </div>
+        <div className="rounded-2xl border border-emerald-400/25 bg-emerald-400/8 p-3">
+          <p className="text-xs uppercase tracking-wider text-emerald-300">TP1</p>
+          <p className="mt-1 font-semibold text-emerald-200">₹{formatPrice(row.tp1Price)}</p>
+          <p className="text-xs text-emerald-300/70">+₹{formatPrice(rewardAmt)}</p>
+        </div>
+        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/6 p-3">
+          <p className="text-xs uppercase tracking-wider text-emerald-300">TP2</p>
+          <p className="mt-1 font-semibold text-emerald-200">₹{formatPrice(row.tp2Price)}</p>
+        </div>
+        <div className="rounded-2xl border border-emerald-400/15 bg-emerald-400/5 p-3">
+          <p className="text-xs uppercase tracking-wider text-emerald-300">TP3</p>
+          <p className="mt-1 font-semibold text-emerald-200">₹{formatPrice(row.tp3Price)}</p>
+        </div>
       </div>
     </article>
   );
@@ -266,9 +294,7 @@ export default function WildPage() {
             <div className="mb-3">{navLinks}</div>
             <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Wild 1H OC Bursts</h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-300">
-              Lists pairs where the current 1H candle body using only Open/Close is at least 2x the previous candle body,
-              volume is higher than the previous candle, and Supertrend is within {nearThresholdPct.toFixed(1)}% of that signal candle close.
-              Exclusion list is the same one used by recommend.
+              Fast momentum scanner. Detailed logic is in docs.
             </p>
           </div>
 
@@ -349,7 +375,7 @@ export default function WildPage() {
             <p className="text-4xl">🌪️</p>
             <p className="mt-4 text-lg font-semibold text-zinc-200">No wild setups right now</p>
             <p className="mt-2 text-sm text-zinc-400">
-              Waiting for 2x OC body + higher volume + supertrend-near conditions.
+              Waiting for qualifying wild setups.
             </p>
           </div>
         ) : (

@@ -359,7 +359,7 @@ export default function RecommendPage() {
               🔥 Hottest Trade Now
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-300">
-              One best trade across all pairs and sides — scored by recency, RVOL, breakout strength, and risk/reward. Auto-refreshes every 5 minutes.
+              Top setup scanner across pairs and sides. Detailed logic is in docs.
             </p>
           </div>
 
@@ -422,7 +422,7 @@ export default function RecommendPage() {
           <div className="rounded-3xl border border-white/10 bg-black/25 px-6 py-16 text-center">
             <p className="text-4xl">😴</p>
             <p className="mt-4 text-lg font-semibold text-zinc-200">No hottest trade found right now</p>
-            <p className="mt-2 text-sm text-zinc-400">No eligible burst signals with strong conviction in the current preset window. Check back soon.</p>
+            <p className="mt-2 text-sm text-zinc-400">No qualifying setup in the selected preset window.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">

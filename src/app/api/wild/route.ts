@@ -146,13 +146,42 @@ function buildWildRow(
 
   const livePrice = prices[pair] || {};
   const ltp = parseNumber(livePrice.ls) || current.close;
+  const side: 'long' | 'short' = current.close >= current.open ? 'long' : 'short';
+
+  // Trade levels are computed only for Wild-eligible rows to keep processing light.
+  const rangePct = current.open > 0 ? ((current.high - current.low) / current.open) * 100 : 0;
+  const riskPct = Math.min(Math.max(rangePct * 0.7, 1.2), 5.5) / 100;
+  const entry = (ltp + stAtSignalCandle) / 2;
+  let sl: number;
+  let tp1: number;
+  let tp2: number;
+  let tp3: number;
+
+  if (side === 'long') {
+    sl = Math.min(entry * (1 - riskPct), stAtSignalCandle * 0.997);
+    const risk = Math.max(entry - sl, entry * 0.006);
+    tp1 = entry + risk;
+    tp2 = entry + risk * 2;
+    tp3 = entry + risk * 3;
+  } else {
+    sl = Math.max(entry * (1 + riskPct), stAtSignalCandle * 1.003);
+    const risk = Math.max(sl - entry, entry * 0.006);
+    tp1 = Math.max(entry - risk, 0);
+    tp2 = Math.max(entry - risk * 2, 0);
+    tp3 = Math.max(entry - risk * 3, 0);
+  }
 
   return {
     pair,
     symbol: pairToSymbol(pair),
     ltp,
-    tradeSide: current.close >= current.open ? 'long' : 'short',
+    tradeSide: side,
     supertrendCross,
+    entryPrice: entry,
+    stopLossPrice: sl,
+    tp1Price: tp1,
+    tp2Price: tp2,
+    tp3Price: tp3,
     bodyMultiple: previousBody > 0 ? currentBody / previousBody : 0,
     currentBodyPct: current.open > 0 ? (currentBody / current.open) * 100 : 0,
     previousBodyPct: previous.open > 0 ? (previousBody / previous.open) * 100 : 0,
