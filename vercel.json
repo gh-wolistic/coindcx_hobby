@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/recommend-alerts",
+      "schedule": "0 9,15 * * *"
+    },
+    {
+      "path": "/api/alerter",
+      "schedule": "*/2 * * * *"
+    }
+  ]
+}

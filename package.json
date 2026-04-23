@@ -6,11 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "alerter": "tsx scripts/standalone-alerter.ts",
+    "alerter:aggressive": "tsx scripts/standalone-alerter.ts aggressive",
+    "alerter:strict": "tsx scripts/standalone-alerter.ts strict"
   },
   "dependencies": {
     "axios": "^1.13.6",
+    "dotenv": "^16.6.1",
     "next": "16.1.6",
+    "node-telegram-bot-api": "^0.67.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "recharts": "^3.7.0"
@@ -18,12 +23,15 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/node-telegram-bot-api": "^0.64.14",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
